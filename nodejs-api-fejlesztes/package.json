@@ -1,0 +1,17 @@
+{
+  "name": "nodejs-api-fejlesztes",
+  "version": "1.0.0",
+  "description": "https://www.toptal.com/developers/gitignore",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "4.17.1",
+    "body-parser": "^1.19.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
