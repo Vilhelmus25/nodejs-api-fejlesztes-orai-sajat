@@ -1,22 +1,41 @@
 const express = require('express');
-const data = require('./data');
+const data = require('./data');         // a mongoose-hoz már nem kell
 const createError = require('http-errors');
-const { NotExtended } = require('http-errors');
+const Person = require('../../models/person.model');    // most innen jön az adat
+const logger = require('../../config/logger')
 
 const controller = express.Router();
 
-controller.get('/', (req, res) => {
-    res.json(data);
-});
+controller.get('/', async (req, res) => {                   // az async await a mongoose-sal jött be
+    // Person.find()
+    const people = await Person.find();
+    //.then(people => {
+    logger.debug(`Get all people, returning ${people.length} items.`);
+    res.json(people);
+    //})
+})
+
+// mongoose get után
+
+// controller.get('/', (req, res) => {
+//     res.json(data);
+// });
 
 // Get one person
-controller.get('/:id', (req, res, next) => {            // kell a next ahol használom!!!!
-    const person = data.find(p => p.id === Number(req.params.id));
+controller.get('/:id', async (req, res, next) => {            // kell a next ahol használom!!!!
+    const person = await Person.findById(req.params.id);
     if (!person) {
         return next(            // a next megszakítja a jelenlegi folyamatot és továbbdobja a következő middleware-nek a kérést
-            new createError.BadRequest("Person is not found!")
-        )
+            new createError.NotFound("Person is not found!")        // NotFound
+        );
     }
+
+    // const person = data.find(p => p.id === Number(req.params.id));
+    // if (!person) {
+    //     return next(            // a next megszakítja a jelenlegi folyamatot és továbbdobja a következő middleware-nek a kérést
+    //         new createError.BadRequest("Person is not found!")
+    //     )
+    // }
     res.json(person);
 });
 
@@ -29,19 +48,30 @@ controller.post('/', (req, res, next) => {
         )
     }
 
-    const newPerson = req.body;         // ez fogja a req.body tartalmazni az új person adatait. A req.body egy string lesz, ez nem jó, nekem objektum kell majd, ezért packages és a dependencies-be felveszem body-parser, majd npm i
+    //const newPerson = req.body;         // ez fogja a req.body tartalmazni az új person adatait. A req.body egy string lesz, ez nem jó, nekem objektum kell majd, ezért packages és a dependencies-be felveszem body-parser, majd npm i
+    // mongoose miatt ez lesz
+    const newPerson = new Person({
+        firstName: first_name,
+        lastName: last_name,
+        email: email
+    })
     // // a ^jelenti azt hogy frissíthető, majd az index.js-ben kell egy bodyParser változó, amibe importáljuk a body-parsert.
-    newPerson.id = data[data.length - 1].id + 1;
-    data.push(newPerson);
 
-    res.status(201);            // ez egy speciális státusz, amikor sikerült létrehozni az új erőforrást
-    res.json(newPerson);
+    // newPerson.id = data[data.length - 1].id + 1;             // mongoose miatt nem kellenek
+    // data.push(newPerson);
+    newPerson.save()
+        .then(data => {                 // egy küldjük el az adatokat
+            res.status(201);            // ez egy speciális státusz, amikor sikerült létrehozni az új erőforrást
+            res.json(data);             // a data kell persze
+        })
+
 });
 
 // Update a person
-controller.put('/:id', (req, res, next) => {         // így kell, ez egy url változó lesz így, vigyázzunk itt put metódus kell, nem post
+controller.put('/:id', async (req, res, next) => {         // így kell, ez egy url változó lesz így, vigyázzunk itt put metódus kell, nem post
     const id = req.params.id;                   // ami a kettőspont után van az egy változó és ezt így érem el.
-    const index = data.findIndex(p => p.id === Number(id))      // ez a Number konstruktorba tevés azért kell, hogy ne legyen gond a típusokkal, mert az url-ben stringként kapom, de a db-ben számként kezelem.
+    // mongoose után nem kell
+    // const index = data.findIndex(p => p.id === Number(id))      // ez a Number konstruktorba tevés azért kell, hogy ne legyen gond a típusokkal, mert az url-ben stringként kapom, de a db-ben számként kezelem.
     const { first_name, last_name, email } = req.body;          // egy ojjektumba pakolom
 
     if (!last_name || !first_name || !email) {
@@ -49,26 +79,48 @@ controller.put('/:id', (req, res, next) => {         // így kell, ez egy url v�
             new createError.BadRequest("Missing properties!")
         )
     }
-    data[index] = {
-        id,
-        //first_name: req.body                                  // így kellene, ha nem lenne a fenti objektum
-        first_name,
-        last_name,
-        email
-    }
 
-    res.json(data[index]);
+    const update = {
+        firstName: first_name,
+        lastName: last_name,
+        email: email
+    }
+    let person = {};
+    try {
+        person = await Person.findByIdAndUpdate(id, update, { new: true })           // ha nem létezik, akkor létrehozza {new: true}
+    } catch (err) {
+        return next(new createError.BadRequest(err));
+    }
+    return res.json(person);
+
+    // data[index] = {
+    //     id,
+    //     //first_name: req.body                                  // így kellene, ha nem lenne a fenti objektum
+    //     first_name,
+    //     last_name,
+    //     email
+    // }
+
+    // res.json(data[index]);
 });
 
 // Delete a person
-controller.delete('/:id', (req, res, next) => {
-    const index = data.findIndex(p => p.id === Number(req.params.id));
-    if (index === -1) {         // a findIndex -1-el tér vissza ha nincs találata
-        return next(            // a next megszakítja a jelenlegi folyamatot és továbbdobja a következő middleware-nek a kérést
-            new createError.BadRequest("Person is not found!")
-        )
+controller.delete('/:id', async (req, res, next) => {
+    const { id } = req.params;
+    let person = {};
+    try {
+        person = await Person.findByIdAndDelete(id)           // itt elég csak az id, mert nem update-elünk, hanem törlünk
+    } catch (err) {
+        return next(new createError.NotFound(err));
     }
-    data.splice(index, 1);
+    // mongoose előtt ez volt:
+    // const index = data.findIndex(p => p.id === Number(req.params.id));
+    // if (index === -1) {         // a findIndex -1-el tér vissza ha nincs találata
+    //     return next(            // a next megszakítja a jelenlegi folyamatot és továbbdobja a következő middleware-nek a kérést
+    //         new createError.BadRequest("Person is not found!")
+    //     )
+    // }
+    // data.splice(index, 1);
     res.json({});               // egy üres objektumot küldök vissza válaszként, de nem is lenne feltétlen szükségválaszra
 });
 
