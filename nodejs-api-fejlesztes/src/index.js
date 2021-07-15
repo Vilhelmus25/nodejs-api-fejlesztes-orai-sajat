@@ -1,3 +1,5 @@
+require('dotenv').config();                         // nem is kell változóba tenni, így is elérhetővé teszi az .env változóit
+const config = require('config')                    // ez már a config mappából fogja keresni a config-ot, ha nincs semmi, akkor a defaultot használja
 const express = require('express');
 const app = express();      // ez egy express fv, ami létrehozza az alkalmazásunkat.
 const bodyParser = require('body-parser');
@@ -7,11 +9,20 @@ const mongoose = require('mongoose');               // mongoose importálása
 mongoose.Promise = global.Promise;                  // ez kell ahhoz, hogy promise-okkal tudjak dolgozni
 // eWuw0XMwudlWUwqL                                 // ez a jelszó
 
-const port = 3000;
+//const port = 3000;
+const port = process.env.PORT || 3000;
 
 // Database connection.
+if (!config.has('database')) {
+    logger.error('No database config found.');
+    process.exit();
+}
+const { username, password, host } = config.get('database');
+
+
 mongoose
-    .connect('mongodb+srv://dbUser:eWuw0XMwudlWUwqL@nodejsapicluster.nzbyf.mongodb.net/myFirstDatabase?retryWrites=true&w=majority', {    // ezt a mongoose odlalról másoltam ki amit előtte autogeneráltattam; Itt volt egy <password> rész, ami helyett bemásoltam a fenti jelszót, ez fontos!
+    //.connect(`mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}`, {    // ezt a mongoose odlalról másoltam ki amit előtte autogeneráltattam; Itt volt egy <password> rész, ami helyett bemásoltam a fenti jelszót, ez fontos!
+    .connect(`mongodb+srv://${username}:${password}@${host}`, {    // ezt a mongoose odlalról másoltam ki amit előtte autogeneráltattam; Itt volt egy <password> rész, ami helyett bemásoltam a fenti jelszót, ez fontos!
         useNewUrlParser: true,
         useUnifiedTopology: true
     })

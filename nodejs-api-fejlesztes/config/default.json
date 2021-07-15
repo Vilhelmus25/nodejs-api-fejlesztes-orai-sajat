@@ -1,0 +1,7 @@
+{
+    "database": {
+        "usernane": "dbUser",
+        "password": "eWuw0XMwudlWUwqL",
+        "host": "nodejsapicluster.nzbyf.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
+    }
+}
