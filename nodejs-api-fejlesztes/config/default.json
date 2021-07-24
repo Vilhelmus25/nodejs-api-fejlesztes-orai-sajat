@@ -1,7 +1,7 @@
 {
     "database": {
-        "usernane": "dbUser",
-        "password": "eWuw0XMwudlWUwqL",
-        "host": "nodejsapicluster.nzbyf.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
+        "username": "dbUser",
+        "password": "eRGCImNvLyqfPaGf",
+        "host": "mongo:27017/JestDB?retryWrites=true&w=majority"
     }
 }
