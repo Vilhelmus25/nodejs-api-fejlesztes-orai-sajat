@@ -17,7 +17,7 @@ const authenticateJwt = require('./auth/authenticate');
 const adminOnly = require('./auth/adminOnly');
 const authHandler = require('./auth/authHandler');
 
-const swaggerDocument = YAML.load('./docs/swagger.yaml');
+const swaggerDocument = YAML.load('./docs/swager.yaml');
 
 const { username, password, host } = config.get('database');
 mongoose
